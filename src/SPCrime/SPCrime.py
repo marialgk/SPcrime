@@ -77,7 +77,10 @@ def build_cepDB(path:str|None=None):
     cache_dir = Path(user_cache_dir('SPCrime'))
     file_path = cache_dir / 'cep.csv'
     if path is None:
-        CEP = pd.read_csv(file_path, index_col=0)
+        try:
+            CEP = pd.read_csv(file_path, index_col=0)
+        except FileNotFoundError:
+            print('CEP database not found.')
 
     else:
         for i in [1, 2, 3, 4, 5]:
@@ -103,7 +106,7 @@ def build_cepDB(path:str|None=None):
     
         CEP['cidade'] = pd.to_numeric(CEP['cidade']).replace(cities)
         CEP['cidade'] = CEP['cidade'].astype(str)
-        CEP.save_csv(file_path)
+        CEP.to_csv(file_path)
 
     return CEP
 
