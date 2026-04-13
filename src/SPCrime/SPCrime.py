@@ -68,19 +68,20 @@ def check_cep(series,
 #%% PART 1 - RETRIEVE PATIENT'S ADRESS: PREPARE CEP TABLE (FROM SOURCE)
 # Source: https://www.cepaberto.com/downloads/new
 
-# Make ths one private
-# Just make the built database available
 def build_cepDB(path:str|None=None):
     """
     Concatanates the tables from CEP Aberto database and add city names.
     """
     cache_dir = Path(user_cache_dir('SPCrime'))
     file_path = cache_dir / 'cep.csv'
+
     if path is None:
         try:
             CEP = pd.read_csv(file_path, index_col=0)
         except FileNotFoundError:
-            print('CEP database not found.')
+            source = resources.files('SPCrime.data').joinpath('cep_default.csv')
+            with source.open('r', encoding='utf-8') as f:
+                CEP = pd.read_csv(f, sep='\t', dtype=str)
 
     else:
         for i in [1, 2, 3, 4, 5]:
@@ -244,11 +245,12 @@ def open_crime_file(year):
         print("Downloading file...")
 
         url = f"https://www.ssp.sp.gov.br/assets/estatistica/transparencia/spDados/{file}"
-        response = requests.get(url)
+        response = requests.get(url, stream=True)
 
         if response.status_code != 200:
             raise Exception(f"Download failed: {response.status_code}")
 
+        print('Successfully downloaded data')
         with open(file_path, "wb") as f:
             f.write(response.content)
 
@@ -256,6 +258,7 @@ def open_crime_file(year):
         pass
 
     # read file
+    print('Reading and concatenating files...')
     crime_S1 = pd.read_excel(file_path,
                              header=0,
                              sheet_name=0)
@@ -266,6 +269,7 @@ def open_crime_file(year):
     crime = pd.concat([crime_S1,crime_S2],
                       axis=0)
 
+    print('Filtering data...')
     crime = crime[['CIDADE', 'BAIRRO', 'NATUREZA_APURADA']]
     return crime
 
